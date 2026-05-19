@@ -27,6 +27,7 @@ INDEX = "cnefe_ba"
 
 XLSX_IN = Path(__file__).parent.parent / "data" / "raw" / "base_busca.xlsx"
 CSV_OUT = Path(__file__).parent.parent / "data" / "processed" / "resultado.csv"
+XLSX_OUT = Path(__file__).parent.parent / "data" / "processed" / "resultado.xlsx"
 
 # scores mínimos por camada — empíricos, ajustar depois da 1a rodada
 MIN_SCORE_LAYER1 = 5.0
@@ -165,9 +166,10 @@ def process(df: pd.DataFrame, es: Elasticsearch) -> pd.DataFrame:
     return out
 
 
-def write_output(df: pd.DataFrame, path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(path, index=False)
+def write_output(df: pd.DataFrame, csv_path: Path, xlsx_path: Path) -> None:
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(csv_path, index=False)
+    df.to_excel(xlsx_path, index=False, sheet_name="resultado")
 
 
 def print_summary(df: pd.DataFrame) -> None:
@@ -196,9 +198,10 @@ def main():
     df = read_input(XLSX_IN)
     print(f"Processando {len(df)} enderecos...\n")
     out = process(df, es)
-    write_output(out, CSV_OUT)
+    write_output(out, CSV_OUT, XLSX_OUT)
     print_summary(out)
     print(f"\nGravado em {CSV_OUT}")
+    print(f"          {XLSX_OUT}")
 
 
 if __name__ == "__main__":

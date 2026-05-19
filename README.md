@@ -88,7 +88,10 @@ python scripts/index_cnefe.py    # ~45 min, indexa o CNEFE no ES
 python scripts/search.py         # processa a base de busca e gera o CSV
 ```
 
-A saída sai em `data/processed/resultado.csv`.
+A saída sai em `data/processed/resultado.csv` e também em
+`data/processed/resultado.xlsx` — mesmos dados, dois formatos
+pra facilitar inspeção. O CSV usa vírgula como separador (RFC 4180);
+em Excel pt-BR (que assume `;`), use o XLSX ou o pandas direto.
 
 ## Estrutura
 
@@ -106,7 +109,8 @@ cnefe-match/
 └── data/
     ├── raw/                    (não versionado)
     └── processed/
-        ├── resultado.csv       saída final
+        ├── resultado.csv       saída final em CSV
+        ├── resultado.xlsx      saída final em XLSX (mesmo conteúdo)
         └── execucao.log        log da última execução
 ```
 
