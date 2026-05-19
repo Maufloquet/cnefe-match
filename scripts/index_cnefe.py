@@ -123,8 +123,13 @@ def main():
     total_indexed = 0
     total_errors = 0
 
-    print(f"Lendo {CSV.name} e indexando em lotes de {BULK_SIZE}...")
-    pbar = tqdm(total=9_047_296, unit="docs")
+    print(f"Contando linhas de {CSV.name}...")
+    with open(CSV, "rb") as f:
+        total_lines = sum(1 for _ in f) - 1  # tira o cabecalho
+    print(f"  {total_lines:,} linhas")
+
+    print(f"Indexando em lotes de {BULK_SIZE}...")
+    pbar = tqdm(total=total_lines, unit="docs")
     for chunk in pd.read_csv(
         CSV,
         sep=";",

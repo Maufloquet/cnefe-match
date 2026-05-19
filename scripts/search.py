@@ -4,23 +4,23 @@ A camada 1 exige município + CEP + número, com logradouro fuzzy.
 A 2 relaxa o número. A 3 relaxa o CEP (vira prefixo de 5 dígitos).
 A primeira camada que retornar hit com score acima do limite vence.
 
-Saída em data/processed/resultado.csv com 3 colunas novas:
-setor_censitario_encontrado, match_layer (1/2/3/none) e match_score.
+Cada endereço sai com um match_status: encontrado, ambiguo ou
+nao_encontrado. Ambiguidade é detectada comparando os 2 hits de
+maior score do ES — se o segundo está perto demais do primeiro
+(razão >= AMBIG_RATIO) e os setores são distintos, marcamos.
+
+Saída em data/processed/resultado.csv com 4 colunas novas:
+setor_censitario_encontrado, match_status, match_layer e match_score.
 """
 
 import sys
-import importlib.util
 from pathlib import Path
 
 import pandas as pd
 from elasticsearch import Elasticsearch
 
-_spec = importlib.util.spec_from_file_location(
-    "norm", Path(__file__).parent / "02_normalize.py"
-)
-_norm = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_norm)
-normalize_row = _norm.normalize_row
+sys.path.insert(0, str(Path(__file__).parent))
+from normalize import normalize_row
 
 ES_URL = "http://localhost:9200"
 INDEX = "cnefe_ba"
@@ -32,6 +32,10 @@ CSV_OUT = Path(__file__).parent.parent / "data" / "processed" / "resultado.csv"
 MIN_SCORE_LAYER1 = 5.0
 MIN_SCORE_LAYER2 = 3.0
 MIN_SCORE_LAYER3 = 1.0
+
+# Se o segundo melhor hit tiver score >= AMBIG_RATIO * primeiro,
+# consideramos o resultado ambíguo (a menos que os setores coincidam).
+AMBIG_RATIO = 0.85
 
 
 def query_layer1(n):
@@ -90,9 +94,26 @@ def query_layer3(n):
     return q
 
 
+def is_ambiguous(hits):
+    """Top 2 hits muito proximos em score e com setores diferentes."""
+    if len(hits) < 2:
+        return False
+    top1, top2 = hits[0], hits[1]
+    s1, s2 = top1["_score"], top2["_score"]
+    if s1 <= 0:
+        return False
+    if top1["_source"]["cod_setor"] == top2["_source"]["cod_setor"]:
+        return False
+    return (s2 / s1) >= AMBIG_RATIO
+
+
 def search_one(es, n):
+    """Tenta camada 1 -> 2 -> 3 e devolve (cod_setor, status, layer, score).
+
+    status: 'encontrado', 'ambiguo' ou 'nao_encontrado'.
+    """
     if not n["municipio_6"]:
-        return (None, "none", 0.0)
+        return (None, "nao_encontrado", "none", 0.0)
 
     layers = [
         (1, query_layer1, MIN_SCORE_LAYER1),
@@ -104,17 +125,66 @@ def search_one(es, n):
             resp = es.search(
                 index=INDEX,
                 query=builder(n),
-                size=1,
+                size=5,
                 _source=["cod_setor"],
             )
             hits = resp["hits"]["hits"]
-            if hits:
-                score = hits[0]["_score"]
-                if score >= min_score:
-                    return (hits[0]["_source"]["cod_setor"], layer_num, score)
+            if not hits:
+                continue
+            score = hits[0]["_score"]
+            if score < min_score:
+                continue
+            status = "ambiguo" if is_ambiguous(hits) else "encontrado"
+            return (hits[0]["_source"]["cod_setor"], status, layer_num, score)
         except Exception as e:
             print(f"  erro camada {layer_num}: {e}")
-    return (None, "none", 0.0)
+    return (None, "nao_encontrado", "none", 0.0)
+
+
+def read_input(path: Path) -> pd.DataFrame:
+    return pd.read_excel(path, dtype=str)
+
+
+def process(df: pd.DataFrame, es: Elasticsearch) -> pd.DataFrame:
+    setores, statuses, layers, scores = [], [], [], []
+    for i, row in df.iterrows():
+        n = normalize_row(row.to_dict())
+        setor, status, layer, score = search_one(es, n)
+        setores.append(setor)
+        statuses.append(status)
+        layers.append(layer)
+        scores.append(round(score, 2))
+        mark = {"encontrado": "ok ", "ambiguo": "amb", "nao_encontrado": "---"}[status]
+        print(f"  {i+1:3d}. [{mark}] layer={layer} score={score:5.2f} -> {setor}")
+
+    out = df.copy()
+    out["setor_censitario_encontrado"] = setores
+    out["match_status"] = statuses
+    out["match_layer"] = layers
+    out["match_score"] = scores
+    return out
+
+
+def write_output(df: pd.DataFrame, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(path, index=False)
+
+
+def print_summary(df: pd.DataFrame) -> None:
+    total = len(df)
+    counts = df["match_status"].value_counts().to_dict()
+    layer_counts = df["match_layer"].value_counts().to_dict()
+    enc = counts.get("encontrado", 0)
+    amb = counts.get("ambiguo", 0)
+    neg = counts.get("nao_encontrado", 0)
+    print(f"\nResumo:")
+    print(f"  total:           {total}")
+    print(f"  encontrados:     {enc} ({100 * enc / total:.1f}%)")
+    print(f"  ambiguos:        {amb}")
+    print(f"  nao encontrados: {neg}")
+    for k in [1, 2, 3, "1", "2", "3", "none"]:
+        if k in layer_counts:
+            print(f"  camada {k}: {layer_counts[k]}")
 
 
 def main():
@@ -123,38 +193,11 @@ def main():
         print("ES nao responde")
         sys.exit(1)
 
-    df = pd.read_excel(XLSX_IN, dtype=str)
+    df = read_input(XLSX_IN)
     print(f"Processando {len(df)} enderecos...\n")
-
-    setores = []
-    layers = []
-    scores = []
-    layer_counts = {1: 0, 2: 0, 3: 0, "none": 0}
-
-    for i, row in df.iterrows():
-        n = normalize_row(row.to_dict())
-        setor, layer, score = search_one(es, n)
-        setores.append(setor)
-        layers.append(layer)
-        scores.append(round(score, 2))
-        layer_counts[layer] += 1
-        mark = "ok" if setor else "  "
-        print(f"  {i+1:3d}. [{mark}] layer={layer} score={score:5.2f} -> {setor}")
-
-    df["setor_censitario_encontrado"] = setores
-    df["match_layer"] = layers
-    df["match_score"] = scores
-
-    CSV_OUT.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(CSV_OUT, index=False)
-
-    total = len(df)
-    encontrados = total - layer_counts["none"]
-    print(f"\nResumo:")
-    print(f"  total:       {total}")
-    print(f"  encontrados: {encontrados} ({100 * encontrados / total:.1f}%)")
-    for k in [1, 2, 3, "none"]:
-        print(f"  camada {k}: {layer_counts[k]}")
+    out = process(df, es)
+    write_output(out, CSV_OUT)
+    print_summary(out)
     print(f"\nGravado em {CSV_OUT}")
 
 

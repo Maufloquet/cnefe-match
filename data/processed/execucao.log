@@ -2,120 +2,121 @@
   warnings.warn(
 Processando 107 enderecos...
 
-    1. [ok] layer=3 score=38.23 -> 290070205000118P
-    2. [ok] layer=1 score=25.39 -> 290130405000006P
-    3. [ok] layer=1 score=20.85 -> 290200505000039P
-    4. [ok] layer=1 score=22.41 -> 290240105000018P
-    5. [ok] layer=2 score=16.44 -> 290320105000053P
-    6. [ok] layer=1 score=25.85 -> 290630305000025P
-    7. [ok] layer=1 score=25.80 -> 290660005000007P
-    8. [ok] layer=1 score=30.58 -> 290700405000002P
-    9. [ok] layer=1 score=29.24 -> 290750905000085P
-   10. [ok] layer=2 score=16.33 -> 291072705000208P
-   11. [ok] layer=3 score=37.70 -> 291080005080001P
-   12. [ok] layer=1 score=28.04 -> 291160005000025P
-   13. [ok] layer=1 score=22.92 -> 291170912000007P
-   14. [ok] layer=1 score=25.16 -> 291180805000022P
-   15. [ok] layer=1 score=18.84 -> 291210305000047P
-   16. [ok] layer=1 score=22.51 -> 291430705000006P
-   17. [ok] layer=1 score=25.72 -> 291430710000009P
-   18. [ok] layer=2 score=39.10 -> 291480205000121P
-   19. [ok] layer=1 score=29.93 -> 291560105000150P
-   20. [ok] layer=1 score=16.92 -> 291600515000011P
-   21. [ok] layer=1 score=22.48 -> 291680705000031P
-   22. [ok] layer=1 score=26.00 -> 291770605000013P
-   23. [ok] layer=3 score=29.38 -> 291840705000178P
-   24. [ok] layer=1 score=20.74 -> 291880315000016P
-   25. [ok] layer=1 score=19.03 -> 291880315000014P
-   26. [ok] layer=1 score=24.62 -> 291910805000004P
-   27. [ok] layer=3 score=41.40 -> 291955305000082P
-   28. [ok] layer=1 score=31.95 -> 292145005000001P
-   29. [ok] layer=1 score=20.63 -> 292390205000004P
-   30. [ok] layer=1 score=22.80 -> 292440515000003P
-   31. [ok] layer=1 score=20.65 -> 292520405000028P
-   32. [ok] layer=1 score=22.16 -> 292530305000191P
-   33. [ok] layer=1 score=16.34 -> 292530307000009P
-   34. [ok] layer=1 score=18.31 -> 292530305000153P
-   35. [ok] layer=1 score=18.71 -> 292530305000112P
-   36. [ok] layer=1 score=24.04 -> 292580805000018P
-   37. [ok] layer=3 score=21.50 -> 292740805220801P
-   38. [ok] layer=1 score=28.53 -> 292740805130011P
-   39. [ok] layer=2 score=22.69 -> 292740805220789P
-   40. [ok] layer=2 score=14.39 -> 292740805060046P
-   41. [ok] layer=2 score=24.23 -> 292740805180401P
-   42. [ok] layer=2 score=19.86 -> 292740805150141P
-   43. [ok] layer=2 score=28.20 -> 292740805210172P
-   44. [ok] layer=2 score=15.42 -> 292740805130109P
-   45. [ok] layer=1 score=22.50 -> 292880205000067P
-   46. [ok] layer=1 score=21.06 -> 292895005000005P
-   47. [ok] layer=1 score=18.05 -> 293050105000113P
-   48. [ok] layer=1 score=28.57 -> 293077405000045P
-   49. [ok] layer=1 score=22.53 -> 293135010000014P
-   50. [ok] layer=1 score=28.05 -> 293200205000010P
-   51. [ok] layer=1 score=22.07 -> 293220005000016P
-   52. [ok] layer=1 score=21.20 -> 293250725000002P
-   53. [ok] layer=1 score=26.56 -> 293320810000001P
-   54. [ok] layer=1 score=24.43 -> 293360405000027P
-   55. [ok] layer=1 score=27.35 -> 290135305000024P
-   56. [ok] layer=1 score=33.65 -> 290260905000007P
-   57. [ok] layer=2 score=15.67 -> 290320105000053P
-   58. [ok] layer=1 score=20.90 -> 290323505000020P
-   59. [ok] layer=1 score=21.44 -> 290340905000006P
-   60. [ok] layer=1 score=17.98 -> 290390405000020P
-   61. [ok] layer=1 score=17.43 -> 290650105000017P
-   62. [ok] layer=1 score=24.65 -> 290720215000010P
-   63. [ok] layer=1 score=31.95 -> 290730125000019P
-   64. [ok] layer=1 score=20.50 -> 290730105000010P
-   65. [ok] layer=1 score=30.64 -> 290840805000002P
-   66. [ok] layer=2 score=26.04 -> 290940615000004P
-   67. [ok] layer=2 score=25.23 -> 290960405000014P
-   68. [ok] layer=1 score=27.12 -> 291100605000006P
-   69. [ok] layer=1 score=27.44 -> 291180805000036P
-   70. [ok] layer=1 score=24.36 -> 291190705000034P
-   71. [ok] layer=1 score=24.99 -> 291390305000002P
-   72. [ok] layer=1 score=24.52 -> 291460405000086P
-   73. [ok] layer=2 score=15.29 -> 291480205000308P
-   74. [ok] layer=2 score=22.13 -> 291570005000015P
-   75. [ok] layer=1 score=25.83 -> 291610405000062P
-   76. [ok] layer=1 score=21.05 -> 291690605000003P
-   77. [ok] layer=1 score=21.72 -> 291750805000105P
-   78. [ok] layer=3 score=44.20 -> 291800105000100P
-   79. [ok] layer=3 score=17.26 -> 291840705000209P
-   80. [ok] layer=3 score=17.89 -> 291955305000191P
-   81. [ok] layer=2 score=26.34 -> 292220110000001P
-   82. [ok] layer=1 score=28.18 -> 292240905000035P
-   83. [ok] layer=2 score=23.00 -> 292265605000022P
-   84. [ok] layer=1 score=34.21 -> 292300105000026P
-   85. [ok] layer=1 score=25.38 -> 292300110000005P
-   86. [ok] layer=1 score=29.30 -> 292380305000020P
-   87. [ok] layer=1 score=29.48 -> 292390205000005P
-   88. [ok] layer=1 score=23.20 -> 292480125000006P
-   89. [ok] layer=1 score=18.86 -> 292500605000022P
-   90. [ok] layer=1 score=27.80 -> 292710105000040P
-   91. [ok] layer=1 score=15.73 -> 292720005000062P
-   92. [ok] layer=3 score=43.97 -> 292740805270382P
-   93. [ok] layer=1 score=12.79 -> 292740805180068P
-   94. [ok] layer=3 score=24.89 -> 292740805070131P
-   95. [ok] layer=3 score=24.22 -> 292740805220625P
-   96. [ok] layer=3 score=45.98 -> 292740805260166P
-   97. [ok] layer=2 score=28.95 -> 292740805160032P
-   98. [ok] layer=1 score=29.47 -> 292740805090293P
-   99. [ok] layer=1 score=27.49 -> 292790305000006P
-  100. [ok] layer=3 score=26.72 -> 292870305000110P
-  101. [ok] layer=1 score=20.92 -> 292880205000098P
-  102. [ok] layer=1 score=19.48 -> 292910705000017P
-  103. [ok] layer=1 score=25.99 -> 292925515000015P
-  104. [ok] layer=1 score=18.86 -> 292950305000050P
-  105. [ok] layer=1 score=27.09 -> 293015405000040P
-  106. [ok] layer=1 score=26.83 -> 293015405000018P
-  107. [ok] layer=1 score=20.77 -> 293170715000001P
+    1. [amb] layer=3 score=38.23 -> 290070205000118P
+    2. [ok ] layer=1 score=25.39 -> 290130405000006P
+    3. [ok ] layer=1 score=20.85 -> 290200505000039P
+    4. [ok ] layer=1 score=22.41 -> 290240105000018P
+    5. [ok ] layer=2 score=16.44 -> 290320105000053P
+    6. [ok ] layer=1 score=25.85 -> 290630305000025P
+    7. [ok ] layer=1 score=25.80 -> 290660005000007P
+    8. [ok ] layer=1 score=30.58 -> 290700405000002P
+    9. [ok ] layer=1 score=29.24 -> 290750905000085P
+   10. [amb] layer=2 score=16.33 -> 291072705000208P
+   11. [amb] layer=3 score=37.70 -> 291080005080001P
+   12. [ok ] layer=1 score=28.04 -> 291160005000025P
+   13. [amb] layer=1 score=22.92 -> 291170912000007P
+   14. [amb] layer=1 score=25.16 -> 291180805000022P
+   15. [amb] layer=1 score=18.84 -> 291210305000047P
+   16. [amb] layer=1 score=22.51 -> 291430705000006P
+   17. [ok ] layer=1 score=25.72 -> 291430710000009P
+   18. [amb] layer=2 score=39.10 -> 291480205000121P
+   19. [ok ] layer=1 score=29.93 -> 291560105000150P
+   20. [ok ] layer=1 score=16.92 -> 291600515000011P
+   21. [amb] layer=1 score=22.48 -> 291680705000031P
+   22. [ok ] layer=1 score=26.00 -> 291770605000013P
+   23. [amb] layer=3 score=29.38 -> 291840705000178P
+   24. [ok ] layer=1 score=20.74 -> 291880315000016P
+   25. [ok ] layer=1 score=19.03 -> 291880315000014P
+   26. [ok ] layer=1 score=24.62 -> 291910805000004P
+   27. [amb] layer=3 score=41.40 -> 291955305000082P
+   28. [ok ] layer=1 score=31.95 -> 292145005000001P
+   29. [amb] layer=1 score=20.63 -> 292390205000004P
+   30. [ok ] layer=1 score=22.80 -> 292440515000003P
+   31. [ok ] layer=1 score=20.65 -> 292520405000028P
+   32. [ok ] layer=1 score=22.16 -> 292530305000191P
+   33. [amb] layer=1 score=16.34 -> 292530307000009P
+   34. [amb] layer=1 score=18.31 -> 292530305000153P
+   35. [ok ] layer=1 score=18.71 -> 292530305000112P
+   36. [amb] layer=1 score=24.04 -> 292580805000018P
+   37. [ok ] layer=3 score=21.50 -> 292740805220801P
+   38. [ok ] layer=1 score=28.53 -> 292740805130011P
+   39. [amb] layer=2 score=22.69 -> 292740805220789P
+   40. [ok ] layer=2 score=14.39 -> 292740805060046P
+   41. [ok ] layer=2 score=24.23 -> 292740805180401P
+   42. [ok ] layer=2 score=19.86 -> 292740805150141P
+   43. [ok ] layer=2 score=28.20 -> 292740805210172P
+   44. [ok ] layer=2 score=15.42 -> 292740805130109P
+   45. [amb] layer=1 score=22.50 -> 292880205000067P
+   46. [ok ] layer=1 score=21.06 -> 292895005000005P
+   47. [ok ] layer=1 score=18.05 -> 293050105000113P
+   48. [ok ] layer=1 score=28.57 -> 293077405000045P
+   49. [ok ] layer=1 score=22.53 -> 293135010000014P
+   50. [ok ] layer=1 score=28.05 -> 293200205000010P
+   51. [amb] layer=1 score=22.07 -> 293220005000016P
+   52. [amb] layer=1 score=21.20 -> 293250725000002P
+   53. [ok ] layer=1 score=26.56 -> 293320810000001P
+   54. [ok ] layer=1 score=24.43 -> 293360405000027P
+   55. [ok ] layer=1 score=27.35 -> 290135305000024P
+   56. [ok ] layer=1 score=33.65 -> 290260905000007P
+   57. [ok ] layer=2 score=15.67 -> 290320105000053P
+   58. [ok ] layer=1 score=20.90 -> 290323505000020P
+   59. [amb] layer=1 score=21.44 -> 290340905000006P
+   60. [amb] layer=1 score=17.98 -> 290390405000020P
+   61. [ok ] layer=1 score=17.43 -> 290650105000017P
+   62. [ok ] layer=1 score=24.65 -> 290720215000010P
+   63. [ok ] layer=1 score=31.95 -> 290730125000019P
+   64. [amb] layer=1 score=20.50 -> 290730105000010P
+   65. [ok ] layer=1 score=30.64 -> 290840805000002P
+   66. [ok ] layer=2 score=26.04 -> 290940615000004P
+   67. [ok ] layer=2 score=25.23 -> 290960405000014P
+   68. [ok ] layer=1 score=27.12 -> 291100605000006P
+   69. [ok ] layer=1 score=27.44 -> 291180805000036P
+   70. [ok ] layer=1 score=24.36 -> 291190705000034P
+   71. [ok ] layer=1 score=24.99 -> 291390305000002P
+   72. [amb] layer=1 score=24.52 -> 291460405000086P
+   73. [ok ] layer=2 score=15.29 -> 291480205000308P
+   74. [ok ] layer=2 score=22.13 -> 291570005000015P
+   75. [ok ] layer=1 score=25.83 -> 291610405000062P
+   76. [amb] layer=1 score=21.05 -> 291690605000003P
+   77. [amb] layer=1 score=21.72 -> 291750805000105P
+   78. [ok ] layer=3 score=44.20 -> 291800105000100P
+   79. [ok ] layer=3 score=17.26 -> 291840705000209P
+   80. [ok ] layer=3 score=17.89 -> 291955305000191P
+   81. [ok ] layer=2 score=26.34 -> 292220110000001P
+   82. [ok ] layer=1 score=28.18 -> 292240905000035P
+   83. [ok ] layer=2 score=23.00 -> 292265605000022P
+   84. [ok ] layer=1 score=34.21 -> 292300105000026P
+   85. [ok ] layer=1 score=25.38 -> 292300110000005P
+   86. [ok ] layer=1 score=29.30 -> 292380305000020P
+   87. [ok ] layer=1 score=29.48 -> 292390205000005P
+   88. [amb] layer=1 score=23.20 -> 292480125000006P
+   89. [amb] layer=1 score=18.86 -> 292500605000022P
+   90. [ok ] layer=1 score=27.80 -> 292710105000040P
+   91. [amb] layer=1 score=15.73 -> 292720005000062P
+   92. [ok ] layer=3 score=43.97 -> 292740805270382P
+   93. [amb] layer=1 score=12.79 -> 292740805180068P
+   94. [ok ] layer=3 score=24.89 -> 292740805070131P
+   95. [amb] layer=3 score=24.22 -> 292740805220625P
+   96. [ok ] layer=3 score=45.98 -> 292740805260166P
+   97. [ok ] layer=2 score=28.95 -> 292740805160032P
+   98. [amb] layer=1 score=29.47 -> 292740805090293P
+   99. [amb] layer=1 score=27.49 -> 292790305000006P
+  100. [ok ] layer=3 score=26.72 -> 292870305000110P
+  101. [amb] layer=1 score=20.92 -> 292880205000098P
+  102. [ok ] layer=1 score=19.48 -> 292910705000017P
+  103. [amb] layer=1 score=25.99 -> 292925515000015P
+  104. [amb] layer=1 score=18.86 -> 292950305000050P
+  105. [ok ] layer=1 score=27.09 -> 293015405000040P
+  106. [amb] layer=1 score=26.83 -> 293015405000018P
+  107. [amb] layer=1 score=20.77 -> 293170715000001P
 
 Resumo:
-  total:       107
-  encontrados: 107 (100.0%)
+  total:           107
+  encontrados:     70 (65.4%)
+  ambiguos:        37
+  nao encontrados: 0
   camada 1: 77
   camada 2: 17
   camada 3: 13
-  camada none: 0
 
 Gravado em /Users/mauriciofloquet/projetos/cnefe-match/data/processed/resultado.csv

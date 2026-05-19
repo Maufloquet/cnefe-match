@@ -1,8 +1,12 @@
 # cnefe-match
 
-Solução para o teste de Engenharia de Dados Jr. do Cidacs/Fiocruz: dada uma
-base de busca com 107 endereços de qualidade variável, localizar o setor
-censitário de cada um na base CNEFE Bahia (Censo 2022, ~9M endereços).
+Solução para o teste prático da vaga "Bolsa de Pesquisa para Engenheiro
+de Dados Júnior" do Cidacs/Fiocruz. Dada uma base de busca com endereços
+de qualidade variável, localizar o setor censitário correspondente na
+base CNEFE Bahia (Censo 2022, ~9M endereços).
+
+Observação: o enunciado fala em 100 endereços; o arquivo entregue tem
+107 linhas e a solução processa todas (não há truncagem manual).
 
 ## O que a solução faz
 
@@ -12,9 +16,17 @@ mais estrita (filtra por município, CEP e número, e usa fuzzy só no
 logradouro). Se não retornar nada com score razoável, cai pra camada
 2 (sem número) e depois pra camada 3 (sem CEP exato, apenas prefixo).
 
-A saída final é um CSV com as colunas originais mais três novas:
-`setor_censitario_encontrado`, `match_layer` e `match_score`. Endereços
-não localizados aparecem com o setor vazio e `match_layer = "none"`.
+A saída final é um CSV com as colunas originais mais quatro novas:
+
+- `setor_censitario_encontrado` — código do setor, ou vazio.
+- `match_status` — `encontrado`, `ambiguo` ou `nao_encontrado`.
+- `match_layer` — qual camada produziu o match (1, 2, 3 ou `none`).
+- `match_score` — score retornado pelo Elasticsearch.
+
+Um endereço é marcado como `ambiguo` quando o segundo melhor hit tem
+score muito próximo do primeiro (razão >= 0,85) e os setores diferem.
+Mesmo nesses casos, devolvemos o melhor hit em `setor_censitario_encontrado`
+— a flag serve pra que o avaliador saiba onde a confiança é menor.
 
 ## Como rodar
 
@@ -22,7 +34,7 @@ Pré-requisitos: Docker Desktop, Python 3.9 ou superior, e ~3 GB livres
 pra acomodar o índice do Elasticsearch.
 
 ```bash
-git clone <repo> cnefe-match
+git clone https://github.com/Maufloquet/cnefe-match.git
 cd cnefe-match
 
 docker compose up -d
@@ -43,8 +55,8 @@ Os dados não estão versionados (pesados demais). Baixar e salvar em
 Depois:
 
 ```bash
-python scripts/04_index_cnefe.py    # ~45 a 70 min, indexa o CNEFE
-python scripts/05_search.py         # processa a base de busca
+python scripts/index_cnefe.py    # ~45 min, indexa o CNEFE no ES
+python scripts/search.py         # processa a base de busca e gera o CSV
 ```
 
 A saída sai em `data/processed/resultado.csv`.
@@ -57,15 +69,16 @@ cnefe-match/
 ├── requirements.txt
 ├── README.md
 ├── scripts/
-│   ├── 01_explore_cnefe.py     sondagem do CNEFE
-│   ├── 02_normalize.py         normalização da base de busca
-│   ├── 03_explore_busca.py     sondagem da base de busca
-│   ├── 04_index_cnefe.py       indexação bulk
-│   └── 05_search.py            busca em camadas + escrita do resultado
+│   ├── normalize.py            limpeza dos campos da base de busca
+│   ├── index_cnefe.py          indexação bulk no Elasticsearch
+│   ├── search.py               busca em camadas e escrita do resultado
+│   ├── explore_cnefe.py        sondagem inicial do CNEFE (opcional)
+│   └── explore_busca.py        sondagem inicial da base de busca (opcional)
 └── data/
     ├── raw/                    (não versionado)
     └── processed/
-        └── resultado.csv
+        ├── resultado.csv       saída final
+        └── execucao.log        log da última execução
 ```
 
 ## Premissas
@@ -106,29 +119,51 @@ o resultado pode estar errado para esses casos.
 A solução não faz validação cruzada com outras bases (OSM, Google).
 O CNEFE é tratado como ground truth, conforme o enunciado.
 
+Não há etapa de processamento manual. Todos os ajustes (remoção de
+prefixos lixo, tratamento de `SN`, truncagem de município) estão
+implementados em código no `scripts/normalize.py` e podem ser
+reexecutados por terceiros.
+
 ## Métricas da execução
 
 Rodando contra a base de busca fornecida (107 endereços):
 
-- 107/107 endereços localizados
+Por `match_status`:
+
+- 70 encontrados (resposta única clara)
+- 37 ambíguos (existe um segundo setor com score próximo)
+- 0 não encontrados
+
+Por `match_layer`:
+
 - 77 na camada 1 (município + CEP + número + logradouro fuzzy)
 - 17 na camada 2 (sem número, CEP exato)
 - 13 na camada 3 (sem CEP exato — prefixo de 5 dígitos)
-- 0 não encontrados
 
-Os scores variam de ~13 a ~46 (camada 1 e 2 ficam tipicamente entre
-15 e 30; camada 3 entre 17 e 46). O log completo está em
+Os scores ficam tipicamente entre 13 e 46. O log completo está em
 `data/processed/execucao.log`.
 
-Vale notar que a camada 3 é a menos confiável por construção — não
-exige CEP exato. Os 13 casos que caíram lá são quase todos rodovias,
-endereços sem número, ou logradouros de letra única (`RUA E`) que são
-ambíguos por natureza. O `match_layer` e `match_score` ficam no CSV
-de saída justamente pra deixar o avaliador identificar onde a
-confiança é maior ou menor.
+A camada 3 é a menos confiável por construção — não exige CEP exato.
+Os 13 casos que caíram lá são quase todos rodovias, endereços sem
+número, ou logradouros de letra única (`RUA E`).
+
+Sobre os ambíguos: o CNEFE divide um mesmo CEP entre várias faces de
+quadra (e portanto vários setores). Quando o endereço de entrada não
+tem número confiável ou está em zona rural com bairro genérico, é
+esperado que mais de um setor bata com score parecido. Marcamos
+explicitamente esses casos pra o avaliador saber onde a resposta
+única pode coincidentemente estar correta mas a confiança é menor.
 
 ## Dependências
 
-- pandas, pyarrow, openpyxl
+Python:
+
+- pandas, pyarrow
+- openpyxl (leitura do `.xlsx`)
 - elasticsearch (cliente oficial 8.x)
 - unidecode, tqdm
+
+Sistema:
+
+- Docker Desktop (ou Docker Engine + Compose)
+- Python 3.9+
