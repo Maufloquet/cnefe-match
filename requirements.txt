@@ -1,0 +1,5 @@
+pandas>=2.0
+elasticsearch>=8.0,<9.0
+tqdm>=4.65
+unidecode>=1.3
+pyarrow>=14.0
