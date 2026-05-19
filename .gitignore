@@ -10,3 +10,4 @@ venv/
 .idea/
 *.swp
 .DS_Store
+~$*.xlsx
