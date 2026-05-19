@@ -106,12 +106,26 @@ o resultado pode estar errado para esses casos.
 A solução não faz validação cruzada com outras bases (OSM, Google).
 O CNEFE é tratado como ground truth, conforme o enunciado.
 
-## Métricas
+## Métricas da execução
 
-`05_search.py` imprime no terminal o total processado, a distribuição
-por camada (quantos vieram pela 1, pela 2, pela 3) e o número de não
-encontrados. Pra análises mais detalhadas, basta abrir o CSV em pandas
-e filtrar por `match_layer` ou `match_score`.
+Rodando contra a base de busca fornecida (107 endereços):
+
+- 107/107 endereços localizados
+- 77 na camada 1 (município + CEP + número + logradouro fuzzy)
+- 17 na camada 2 (sem número, CEP exato)
+- 13 na camada 3 (sem CEP exato — prefixo de 5 dígitos)
+- 0 não encontrados
+
+Os scores variam de ~13 a ~46 (camada 1 e 2 ficam tipicamente entre
+15 e 30; camada 3 entre 17 e 46). O log completo está em
+`data/processed/execucao.log`.
+
+Vale notar que a camada 3 é a menos confiável por construção — não
+exige CEP exato. Os 13 casos que caíram lá são quase todos rodovias,
+endereços sem número, ou logradouros de letra única (`RUA E`) que são
+ambíguos por natureza. O `match_layer` e `match_score` ficam no CSV
+de saída justamente pra deixar o avaliador identificar onde a
+confiança é maior ou menor.
 
 ## Dependências
 
