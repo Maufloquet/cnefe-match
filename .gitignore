@@ -1,9 +1,5 @@
 data/raw/
-data/processed/
-*.csv
-*.parquet
-*.zip
-*.gz
+data/index.log
 __pycache__/
 *.py[cod]
 .venv/
