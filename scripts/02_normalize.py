@@ -1,16 +1,7 @@
-"""
-Normalização campo-a-campo da base de busca pra alinhar com o CNEFE.
+"""Limpeza campo-a-campo da base de busca antes de mandar pro ES.
 
-Premissa (confirmada na sondagem da base de busca):
-  - A base já vem em colunas separadas (consulta_logradouro,
-    consulta_numero, consulta_bairro, consulta_cep, consulta_complemento,
-    consulta_municipio).
-  - O CNEFE vem em ASCII MAIÚSCULAS sem acento, separador ';'.
-  - Município na busca tem 6 dígitos; no CNEFE são 7 (DV no fim).
-    Filtro: COD_MUNICIPIO do CNEFE truncado em [:6].
-
-Esta função NÃO faz fuzzy matching — só limpeza. O fuzzy fica pro
-Elasticsearch (que faz nativo via `fuzziness: AUTO`).
+Não faz fuzzy aqui — isso fica pro ES via `fuzziness: AUTO`.
+Município vira 6 dígitos pra bater com COD_MUNICIPIO[:6] do CNEFE.
 """
 
 import re
@@ -35,11 +26,7 @@ SEM_NUMERO = {"sn", "s/n", "s\\n", "s n", ""}
 
 
 def norm_text(s) -> str:
-    """Lowercase + sem acento + sem pontuação extra + espaços colapsados.
-
-    Aceita None/NaN e retorna string vazia. Trata "None" literal (NaN
-    serializado pelo exportador da base de busca) como vazio.
-    """
+    """Lowercase, sem acento, sem pontuação extra. Trata None/NaN/'None'."""
     if s is None:
         return ""
     s = str(s).strip()
@@ -54,37 +41,22 @@ def norm_text(s) -> str:
 
 
 def norm_logradouro(s) -> str:
-    """Logradouro normalizado.
-
-    Trata casos especiais da base de busca:
-    - 'None EVILASIO FIRMATO' → 'evilasio firmato' (remove None literal)
-    - '10R FAZENDA BOA ESPERANCA' → 'fazenda boa esperanca' (remove prefixo lixo)
-    """
     s = norm_text(s)
     if not s:
         return ""
-    # Remove "none" prefix literal
+    # tira prefixos lixo do exportador: "None FOO" e "10R FOO"
     s = re.sub(r"^none\s+", "", s)
-    # Remove prefixos numéricos curtos como "10r " (sigla de quadra/lote)
     s = re.sub(r"^\d+[a-z]?\s+(?=(rua|avenida|fazenda|sitio|travessa|estrada|rodovia|praca|alameda|distrito|conjunto|comunidade|via|loteamento))", "", s)
     return s
 
 
 def norm_numero(s) -> Optional[str]:
-    """Número do endereço. Retorna None se for 'sem número' em qualquer
-    variação (SN, S/N, vazio, ou texto não numérico tipo 'BR101').
-
-    Por que: o CNEFE guarda número como string, e 'SN'/0 são lá usados
-    pra zona rural. Tratar como None deixa a query do ES ignorar o
-    campo quando não há número confiável.
-    """
+    """Só dígitos vira número. SN/S/N/BR101 viram None."""
     s = norm_text(s)
     if s in SEM_NUMERO:
         return None
-    # Se for puramente numérico, é número de porta
     if s.isdigit():
         return s
-    # 'BR101', '10A' etc — não vira número, mas pode entrar no logradouro
     return None
 
 
@@ -112,13 +84,8 @@ def norm_municipio_6(s) -> Optional[str]:
 
 
 def normalize_row(row: dict) -> dict:
-    """Normaliza uma linha da base de busca pra entrada do ES.
-
-    Espera dict com chaves: consulta_logradouro, consulta_numero,
-    consulta_bairro, consulta_cep, consulta_complemento, consulta_municipio.
-
-    Retorna dict pronto pra montar a query ES.
-    """
+    """Aplica as norms acima nos campos consulta_* e devolve um dict
+    pronto pra montar a query."""
     return {
         "logradouro": norm_logradouro(row.get("consulta_logradouro")),
         "numero": norm_numero(row.get("consulta_numero")),

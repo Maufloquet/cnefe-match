@@ -1,11 +1,7 @@
-"""
-Sondagem da base de busca (100 endereços do Fiocruz).
-
-O que queremos saber: quantas linhas, quais colunas exatas, taxa de
-preenchimento por campo, padrões de "sem número" (SN, S/N, vazio),
-relação entre consulta_municipio (6 dígitos do PDF) e COD_MUNICIPIO do
-CNEFE (7 dígitos com DV).
-"""
+"""Sondagem da base de busca. Conta linhas, taxa de preenchimento,
+formato do município/CEP, valores mais comuns em número/complemento
+e flagra endereços de baixa qualidade (None literal, prefixos lixo,
+rua de letra única)."""
 
 from collections import Counter
 from pathlib import Path

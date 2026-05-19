@@ -1,12 +1,8 @@
-"""
-Sondagem rápida do CNEFE Bahia.
+"""Sondagem do CNEFE Bahia antes da indexação.
 
-Por que existir: antes de indexar 9M registros no Elasticsearch, precisamos
-saber como o dado está formatado. Tem acento? Tudo MAIÚSCULA? Quantos CEPs
-distintos? Quantos registros têm número de porta? Isso define a estratégia
-de normalização e quais campos viram chave de busca.
-
-Lê o CSV em chunks pra não estourar memória.
+Roda em chunks pra caber na memória. Mostra contagens, taxa de
+preenchimento dos campos, presença de acento, tamanho do COD_SETOR
+e os tipos de logradouro mais comuns.
 """
 
 from collections import Counter
@@ -65,7 +61,7 @@ def main():
         num_present += chunk["NUM_ENDERECO"].notna().sum()
         cep_unique.update(chunk["CEP"].dropna().unique())
 
-        # Primeiros 6 dígitos do setor ≈ código IBGE do município
+        # primeiros 7 do COD_SETOR ≈ código IBGE do município
         muni = chunk["COD_SETOR"].dropna().str[:7]
         municipios.update(muni.tolist())
 

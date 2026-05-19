@@ -1,33 +1,20 @@
-"""
-Busca os 107 endereços da base de busca no índice cnefe_ba.
+"""Busca a base de busca contra o índice cnefe_ba em 3 camadas.
 
-Estratégia em 3 camadas, da mais restritiva pra mais permissiva.
-Mantém o resultado da PRIMEIRA camada que retorna um hit com score
-acima do limite — assim o output prioriza match exato e só cai pra
-fuzzy quando precisa.
+A camada 1 exige município + CEP + número, com logradouro fuzzy.
+A 2 relaxa o número. A 3 relaxa o CEP (vira prefixo de 5 dígitos).
+A primeira camada que retornar hit com score acima do limite vence.
 
-Output: data/processed/resultado.csv com:
-  - todas as colunas originais da base de busca
-  - setor_censitario_encontrado  (None se não achou em nenhuma camada)
-  - match_layer                  (1, 2, 3 ou 'none')
-  - match_score                  (score do ES — útil pra auditoria)
-
-Reprodutível: roda sempre na mesma ordem; queries são determinísticas
-dado o índice.
+Saída em data/processed/resultado.csv com 3 colunas novas:
+setor_censitario_encontrado, match_layer (1/2/3/none) e match_score.
 """
 
 import sys
+import importlib.util
 from pathlib import Path
 
 import pandas as pd
 from elasticsearch import Elasticsearch
 
-sys.path.insert(0, str(Path(__file__).parent))
-from importlib import import_module
-_norm_mod = import_module("02_normalize") if False else None  # placeholder
-
-# Importa normalize_row do módulo irmão
-import importlib.util
 _spec = importlib.util.spec_from_file_location(
     "norm", Path(__file__).parent / "02_normalize.py"
 )
@@ -41,15 +28,13 @@ INDEX = "cnefe_ba"
 XLSX_IN = Path(__file__).parent.parent / "data" / "raw" / "base_busca.xlsx"
 CSV_OUT = Path(__file__).parent.parent / "data" / "processed" / "resultado.csv"
 
-# Limites de score pra aceitar um hit por camada. Calibrados depois
-# que rodarmos a primeira vez e olharmos a distribuição.
+# scores mínimos por camada — empíricos, ajustar depois da 1a rodada
 MIN_SCORE_LAYER1 = 5.0
 MIN_SCORE_LAYER2 = 3.0
 MIN_SCORE_LAYER3 = 1.0
 
 
 def query_layer1(n):
-    """Município + CEP exatos + número exato (se houver) + logradouro fuzzy."""
     must = [
         {"term": {"cod_municipio_6": n["municipio_6"]}},
         {"term": {"cep": n["cep"]}},
@@ -69,7 +54,6 @@ def query_layer1(n):
 
 
 def query_layer2(n):
-    """Município + CEP exatos + logradouro fuzzy + bairro fuzzy (sem número)."""
     must = [
         {"term": {"cod_municipio_6": n["municipio_6"]}},
         {"term": {"cep": n["cep"]}},
@@ -87,12 +71,8 @@ def query_layer2(n):
 
 
 def query_layer3(n):
-    """Município exato + logradouro/bairro fuzzy + prefixo de CEP.
-
-    Pra quando o CEP está errado mas a região (5 dígitos iniciais) ainda
-    bate. CEP no Brasil: 5 primeiros dígitos identificam município/bairro,
-    3 últimos são face de quadra.
-    """
+    # CEP no Brasil: 5 primeiros = região/bairro, 3 últimos = face de quadra.
+    # prefixo dos 5 sobrevive a erros de digitação no fim.
     must = [
         {"term": {"cod_municipio_6": n["municipio_6"]}},
     ]
@@ -111,7 +91,6 @@ def query_layer3(n):
 
 
 def search_one(es, n):
-    """Tenta camada 1 → 2 → 3 e devolve (cod_setor, layer, score)."""
     if not n["municipio_6"]:
         return (None, "none", 0.0)
 
@@ -134,18 +113,18 @@ def search_one(es, n):
                 if score >= min_score:
                     return (hits[0]["_source"]["cod_setor"], layer_num, score)
         except Exception as e:
-            print(f"  ! erro camada {layer_num}: {e}")
+            print(f"  erro camada {layer_num}: {e}")
     return (None, "none", 0.0)
 
 
 def main():
     es = Elasticsearch(ES_URL, request_timeout=60)
     if not es.ping():
-        print("FATAL: ES não responde")
+        print("ES nao responde")
         sys.exit(1)
 
     df = pd.read_excel(XLSX_IN, dtype=str)
-    print(f"Lendo {len(df)} endereços da base de busca...\n")
+    print(f"Processando {len(df)} enderecos...\n")
 
     setores = []
     layers = []
@@ -159,8 +138,8 @@ def main():
         layers.append(layer)
         scores.append(round(score, 2))
         layer_counts[layer] += 1
-        status = "✓" if setor else "✗"
-        print(f"  {i+1:3d}. {status} layer={layer} score={score:5.2f} → {setor}")
+        mark = "ok" if setor else "  "
+        print(f"  {i+1:3d}. [{mark}] layer={layer} score={score:5.2f} -> {setor}")
 
     df["setor_censitario_encontrado"] = setores
     df["match_layer"] = layers
@@ -171,9 +150,9 @@ def main():
 
     total = len(df)
     encontrados = total - layer_counts["none"]
-    print(f"\n=== RESUMO ===")
-    print(f"Total:        {total}")
-    print(f"Encontrados:  {encontrados} ({100 * encontrados / total:.1f}%)")
+    print(f"\nResumo:")
+    print(f"  total:       {total}")
+    print(f"  encontrados: {encontrados} ({100 * encontrados / total:.1f}%)")
     for k in [1, 2, 3, "none"]:
         print(f"  camada {k}: {layer_counts[k]}")
     print(f"\nGravado em {CSV_OUT}")

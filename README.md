@@ -1,132 +1,120 @@
 # cnefe-match
 
-Solução para o teste prático de Engenharia de Dados Jr. (Cidacs/Fiocruz):
-**localizar o setor censitário** correspondente a cada endereço da base
-de busca dentro da base CNEFE Bahia (Censo 2022).
+Solução para o teste de Engenharia de Dados Jr. do Cidacs/Fiocruz: dada uma
+base de busca com 107 endereços de qualidade variável, localizar o setor
+censitário de cada um na base CNEFE Bahia (Censo 2022, ~9M endereços).
 
-## Abordagem
+## O que a solução faz
 
-1. **Indexação** do CNEFE (9M endereços) no Elasticsearch, com campos
-   chave em `keyword` (filtros exatos) e logradouro/bairro em `text`
-   com analyzer `lowercase + asciifolding` (suporta fuzzy nativo).
-2. **Normalização** campo-a-campo da base de busca (lowercase, sem
-   acento, tratamento de `None`/`SN`/`S/N`, prefixos lixo tipo `10R `).
-3. **Busca em 3 camadas**, da mais restritiva pra mais permissiva.
-   Aceita o resultado da primeira camada cujo score passe o limiar.
+Carrega o CNEFE no Elasticsearch (1 índice, ~9M docs) e roda uma busca
+em três camadas para cada endereço da base de busca. A camada 1 é a
+mais estrita (filtra por município, CEP e número, e usa fuzzy só no
+logradouro). Se não retornar nada com score razoável, cai pra camada
+2 (sem número) e depois pra camada 3 (sem CEP exato, apenas prefixo).
 
-### Camadas de busca
+A saída final é um CSV com as colunas originais mais três novas:
+`setor_censitario_encontrado`, `match_layer` e `match_score`. Endereços
+não localizados aparecem com o setor vazio e `match_layer = "none"`.
 
-| Camada | Critérios |
-|--------|-----------|
-| 1 | município exato + CEP exato + número exato + logradouro fuzzy |
-| 2 | município exato + CEP exato + logradouro/bairro fuzzy (sem número) |
-| 3 | município exato + logradouro/bairro fuzzy + prefixo de CEP (5 dígitos) |
+## Como rodar
 
-Endereços que não bateram em nenhuma camada saem com `setor_censitario_encontrado = ""` e `match_layer = "none"`.
-
-## Pré-requisitos
-
-- Docker Desktop
-- Python 3.9+
-- ~3 GB livres de disco para o índice ES
-
-## Passo a passo
+Pré-requisitos: Docker Desktop, Python 3.9 ou superior, e ~3 GB livres
+pra acomodar o índice do Elasticsearch.
 
 ```bash
-# 1. Clonar e entrar
-git clone <repo> cnefe-match && cd cnefe-match
+git clone <repo> cnefe-match
+cd cnefe-match
 
-# 2. Subir Elasticsearch
 docker compose up -d
-# Espera ~30s. Verifica:
-curl -s http://localhost:9200 | head
+# espera o ES subir — ~30s. Pra conferir:
+curl -s http://localhost:9200
 
-# 3. Python venv + dependências
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-
-# 4. Baixar dados (NÃO versionados — pesados)
-# Salva em data/raw/:
-#   - 29_BA.csv (do IBGE ou link alternativo Fiocruz)
-#   - base_busca.xlsx (link Fiocruz no enunciado)
-
-# 5. Indexar CNEFE no ES (~70 min, 9M docs)
-python scripts/04_index_cnefe.py
-
-# 6. Rodar busca dos 107 endereços
-python scripts/05_search.py
-# Saída em data/processed/resultado.csv
 ```
 
-## Estrutura do repositório
+Os dados não estão versionados (pesados demais). Baixar e salvar em
+`data/raw/`:
+
+- `29_BA.csv` — CNEFE Bahia, do IBGE (1,4 GB)
+- `base_busca.xlsx` — base com os 107 endereços, link do enunciado
+
+Depois:
+
+```bash
+python scripts/04_index_cnefe.py    # ~45 a 70 min, indexa o CNEFE
+python scripts/05_search.py         # processa a base de busca
+```
+
+A saída sai em `data/processed/resultado.csv`.
+
+## Estrutura
 
 ```
 cnefe-match/
-├── README.md
-├── docker-compose.yml          # Elasticsearch 8.15.3 single-node
+├── docker-compose.yml
 ├── requirements.txt
+├── README.md
 ├── scripts/
-│   ├── 01_explore_cnefe.py     # sondagem do CNEFE (tipos, acentos, contagens)
-│   ├── 02_normalize.py         # normalização da base de busca
-│   ├── 03_explore_busca.py     # sondagem da base de 107 endereços
-│   ├── 04_index_cnefe.py       # indexação em bulk no ES
-│   └── 05_search.py            # busca em 3 camadas + gera resultado.csv
-├── data/
-│   ├── raw/                    # (não versionado) 29_BA.csv, base_busca.xlsx
-│   └── processed/
-│       └── resultado.csv       # ENTREGÁVEL FINAL
+│   ├── 01_explore_cnefe.py     sondagem do CNEFE
+│   ├── 02_normalize.py         normalização da base de busca
+│   ├── 03_explore_busca.py     sondagem da base de busca
+│   ├── 04_index_cnefe.py       indexação bulk
+│   └── 05_search.py            busca em camadas + escrita do resultado
+└── data/
+    ├── raw/                    (não versionado)
+    └── processed/
+        └── resultado.csv
 ```
 
-## Saída
+## Premissas
 
-`data/processed/resultado.csv` — todas as 107 linhas originais da base
-de busca + 3 colunas novas:
+Algumas decisões adotadas que vale documentar:
 
-| coluna | conteúdo |
-|--------|----------|
-| `setor_censitario_encontrado` | código do setor (15 dígitos + 1 sufixo) ou vazio se não encontrado |
-| `match_layer` | `1`, `2`, `3` ou `none` — qual camada produziu o match |
-| `match_score` | score retornado pelo Elasticsearch (auditoria) |
+O `consulta_municipio` da base de busca vem em 6 dígitos. O CNEFE traz
+o `COD_MUNICIPIO` em 7 dígitos (com DV). Truncar os 7 nos 6 primeiros
+faz o match — verifiquei amostralmente.
 
-## Premissas adotadas
+`SN`, `S/N`, vazio e strings não-numéricas (`BR101`) no campo
+`consulta_numero` são tratadas como ausência de número. O CNEFE também
+usa `SN` no campo de número pra zona rural, então deixar a query
+ignorar o número quando não há um confiável evita falsos negativos.
 
-- **CNEFE confiável como ground truth.** Não fazemos validação cruzada
-  com OSM ou outras bases.
-- **`consulta_municipio` (6 dígitos) corresponde aos primeiros 6 chars
-  de `COD_MUNICIPIO` (7 dígitos) do CNEFE.** Validado com amostras.
-- **`SN`, `S/N`, vazio e valores não-numéricos (ex: `BR101`) em
-  `consulta_numero`** são tratados como ausência de número.
-- **Prefixo "None " e "10R "** em `consulta_logradouro` são lixo de
-  exportação e são removidos antes do match.
-- **Score mínimo por camada** (5.0/3.0/1.0) calibrado empiricamente —
-  ajustável em `05_search.py`.
+A base de busca tem dois prefixos espúrios no campo `consulta_logradouro`:
+`None ` (provavelmente NaN serializado pelo exportador) e `10R ` (sigla
+de quadra/lote vinda solta). Os dois são removidos antes do match.
 
-## Limitações conhecidas
+`consulta_complemento` não entra na query — o campo é muito ruidoso
+(contém de "CASA" a "COELBA", além de "SN" repetido).
 
-- **107 endereços** na base, não 100 (enunciado é aproximado).
-- Setores rurais/zona rural costumam ter logradouro vazio ou genérico
-  (`FAZENDA X`, `SITIO Y`) → match dependente de bairro+município.
-- Endereços com logradouro de letra única (`RUA A`, `RUA D`) são
-  ambíguos por natureza — o ES retorna o mais provável dado o CEP, mas
-  pode haver falsos positivos.
-- A busca não usa `consulta_complemento` (campo muito ruidoso —
-  contém `SN`, `CASA`, `COELBA`, descrições variadas).
+Os limites mínimos de score por camada (5.0, 3.0 e 1.0) são empíricos.
+Podem ser ajustados em `05_search.py`.
 
-## Dependências
+## Limitações
 
-Ver `requirements.txt`. Resumo:
-- `pandas`, `pyarrow`, `openpyxl` — leitura/escrita
-- `elasticsearch` (cliente oficial)
-- `unidecode` — normalização de acento
-- `tqdm` — barra de progresso
+A base tem 107 endereços, não 100 como diz o enunciado. Processo todos.
+
+Endereços rurais com logradouro vazio ou genérico (`FAZENDA X`, `SITIO Y`)
+dependem de bairro e município pra match — em zonas rurais grandes
+isso pode ser ambíguo.
+
+Logradouros de letra única (`RUA A`, `RUA D`, `RUA E`) são ambíguos
+por natureza. O ES retorna o mais provável dado o CEP/município, mas
+o resultado pode estar errado para esses casos.
+
+A solução não faz validação cruzada com outras bases (OSM, Google).
+O CNEFE é tratado como ground truth, conforme o enunciado.
 
 ## Métricas
 
-Após rodar `05_search.py`, o terminal imprime:
-- Total processado
-- Encontrados / não encontrados
-- Distribuição por camada (quantos vieram da camada 1, 2, 3)
+`05_search.py` imprime no terminal o total processado, a distribuição
+por camada (quantos vieram pela 1, pela 2, pela 3) e o número de não
+encontrados. Pra análises mais detalhadas, basta abrir o CSV em pandas
+e filtrar por `match_layer` ou `match_score`.
 
-Para análises adicionais, basta abrir `resultado.csv` em pandas e
-filtrar por `match_layer == "none"` ou por `match_score < N`.
+## Dependências
+
+- pandas, pyarrow, openpyxl
+- elasticsearch (cliente oficial 8.x)
+- unidecode, tqdm

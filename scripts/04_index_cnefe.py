@@ -1,18 +1,8 @@
-"""
-Indexa o CNEFE Bahia (9M endereços) no Elasticsearch.
+"""Indexa o CNEFE Bahia (9M docs) no Elasticsearch.
 
-Estratégia:
-  - Lê o CSV em chunks de 100k linhas (memória OK).
-  - Bulk de 5000 docs por request (tradeoff latência × tamanho).
-  - refresh_interval=-1 e replicas=0 durante a carga; restaura no fim.
-  - Mapping pensado pra query em camadas:
-      * cep, numero, cod_municipio_6 → keyword (filtros exatos)
-      * logradouro_full, bairro → text com analyzer asciifolding+lowercase
-        (suporta fuzzy nativo do ES via `fuzziness: AUTO`)
-      * cod_setor → keyword (é o que vamos devolver)
-
-Estimativa: ~30-45 min em máquina típica.
-"""
+Lê o CSV em chunks de 100k e manda em bulks de 5k pro ES. Durante a
+carga, desliga refresh e replicas pra ganhar velocidade — religa no
+fim. Roda em ~45 min numa máquina típica."""
 
 import sys
 import time
@@ -43,8 +33,8 @@ USECOLS = [
     "LONGITUDE",
 ]
 
-# Analyzer simples: lowercase + asciifolding (idempotente já que CNEFE
-# vem em CAIXA ALTA ASCII, mas garante que queries com acento batam).
+# asciifolding+lowercase pra fuzzy bater queries com acento contra
+# os dados (que já vêm em ASCII MAIÚSCULAS).
 MAPPING = {
     "settings": {
         "number_of_shards": 1,
@@ -82,7 +72,7 @@ MAPPING = {
 
 
 def build_logradouro(row) -> str:
-    """Concatena TIPO + TITULO + NOME do logradouro em um único campo."""
+    """TIPO + TITULO + NOME concatenados, ignorando vazios."""
     parts = []
     for col in ["NOM_TIPO_SEGLOGR", "NOM_TITULO_SEGLOGR", "NOM_SEGLOGR"]:
         v = row.get(col)
@@ -123,12 +113,11 @@ def main():
         print("FATAL: Elasticsearch não responde em", ES_URL)
         sys.exit(1)
 
-    # (Re)cria o índice
     if es.indices.exists(index=INDEX):
-        print(f"⚠️  índice '{INDEX}' já existe — apagando pra reindexar do zero")
+        print(f"indice '{INDEX}' ja existe, recriando do zero")
         es.indices.delete(index=INDEX)
     es.indices.create(index=INDEX, body=MAPPING)
-    print(f"✓ índice '{INDEX}' criado")
+    print(f"indice '{INDEX}' criado")
 
     t0 = time.time()
     total_indexed = 0
@@ -167,7 +156,7 @@ def main():
     count = es.count(index=INDEX)["count"]
 
     elapsed = time.time() - t0
-    print(f"\n✓ indexação concluída em {elapsed / 60:.1f} min")
+    print(f"\nindexacao concluida em {elapsed / 60:.1f} min")
     print(f"  indexados: {total_indexed:,}")
     print(f"  erros:     {total_errors:,}")
     print(f"  count ES:  {count:,}")
