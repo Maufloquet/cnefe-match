@@ -200,6 +200,20 @@ def write_output(df: pd.DataFrame, csv_path: Path, xlsx_path: Path) -> None:
         c.alignment = Alignment(horizontal="center")
     for idx, col_name in enumerate(df.columns, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = COL_WIDTHS.get(col_name, 18)
+
+    # cores por match_status pra facilitar inspecao visual
+    status_fills = {
+        "encontrado": PatternFill(start_color="D8F0D8", end_color="D8F0D8", fill_type="solid"),
+        "ambiguo": PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid"),
+        "nao_encontrado": PatternFill(start_color="F8CECC", end_color="F8CECC", fill_type="solid"),
+    }
+    status_col = list(df.columns).index("match_status") + 1
+    for row in range(2, ws.max_row + 1):
+        fill = status_fills.get(ws.cell(row=row, column=status_col).value)
+        if fill:
+            for col in range(1, ws.max_column + 1):
+                ws.cell(row=row, column=col).fill = fill
+
     ws.auto_filter.ref = ws.dimensions
     ws.freeze_panes = "A2"
     wb.save(xlsx_path)
