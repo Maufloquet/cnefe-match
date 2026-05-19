@@ -28,6 +28,35 @@ score muito próximo do primeiro (razão >= 0,85) e os setores diferem.
 Mesmo nesses casos, devolvemos o melhor hit em `setor_censitario_encontrado`
 — a flag serve pra que o avaliador saiba onde a confiança é menor.
 
+## Tecnologias sugeridas e escolhas
+
+O enunciado sugere quatro tecnologias: Docker, GitHub, Elasticsearch e
+Spark. Abaixo, o que foi adotado e por quê.
+
+**Docker.** Usado para subir o Elasticsearch via `docker-compose.yml`.
+Garante reprodutibilidade do ambiente de busca sem depender de
+instalação local do ES.
+
+**GitHub.** Código versionado em https://github.com/Maufloquet/cnefe-match,
+com histórico de commits coerente com a evolução do projeto.
+
+**Elasticsearch.** Núcleo da solução. Aproveita o `fuzziness: AUTO`
+nativo (BM25 + edit distance) para tolerar variações de escrita, e
+expõe filtros exatos (`term`) e fuzzy (`match`) na mesma query —
+combinação ideal pra busca de endereços com qualidade variável.
+
+**Spark.** Não foi adotado nesta solução. A indexação dos ~9M endereços
+do CNEFE Bahia roda em ~40 min com `pandas.read_csv(chunksize=)` +
+bulk no Elasticsearch numa máquina local sem cluster, e a busca dos
+107 endereços é uma operação I/O contra o ES (não paralelizável de
+forma significativa). Introduzir Spark traria dependência adicional
+(JVM) e overhead de configuração sem ganho mensurável no escopo
+deste teste. Caso o volume cresça — por exemplo, indexar todas as
+27 UFs do CNEFE simultaneamente, ou alimentar o índice a partir de
+múltiplas fontes em pipeline contínuo — Spark passa a fazer sentido
+na camada de leitura e transformação, mantendo o Elasticsearch como
+camada de busca.
+
 ## Como rodar
 
 Pré-requisitos: Docker Desktop, Python 3.9 ou superior, e ~3 GB livres
