@@ -166,10 +166,43 @@ def process(df: pd.DataFrame, es: Elasticsearch) -> pd.DataFrame:
     return out
 
 
+COL_WIDTHS = {
+    "consulta_logradouro": 38,
+    "consulta_numero": 14,
+    "consulta_bairro": 26,
+    "consulta_cep": 12,
+    "consulta_complemento": 18,
+    "consulta_municipio": 14,
+    "setor_censitario_encontrado": 24,
+    "match_status": 16,
+    "match_layer": 12,
+    "match_score": 12,
+}
+
+
 def write_output(df: pd.DataFrame, csv_path: Path, xlsx_path: Path) -> None:
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(csv_path, index=False)
     df.to_excel(xlsx_path, index=False, sheet_name="resultado")
+
+    # Ajustes cosmeticos no xlsx pra abrir legivel sem mexer no Excel
+    from openpyxl import load_workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
+
+    wb = load_workbook(xlsx_path)
+    ws = wb["resultado"]
+    header_fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
+    for col in range(1, ws.max_column + 1):
+        c = ws.cell(row=1, column=col)
+        c.font = Font(bold=True)
+        c.fill = header_fill
+        c.alignment = Alignment(horizontal="center")
+    for idx, col_name in enumerate(df.columns, start=1):
+        ws.column_dimensions[get_column_letter(idx)].width = COL_WIDTHS.get(col_name, 18)
+    ws.auto_filter.ref = ws.dimensions
+    ws.freeze_panes = "A2"
+    wb.save(xlsx_path)
 
 
 def print_summary(df: pd.DataFrame) -> None:
